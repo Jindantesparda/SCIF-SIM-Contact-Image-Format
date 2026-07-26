@@ -55,3 +55,5 @@ class ScifEncoder:
                     number="0" * 20
                 )
             )
+
+    from scif.fileio import ScifFile

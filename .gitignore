@@ -1,0 +1,11 @@
+.venv/
+.idea/
+
+__pycache__/
+*.pyc
+
+images/output/
+images/scif/
+
+.DS_Store
+Thumbs.db

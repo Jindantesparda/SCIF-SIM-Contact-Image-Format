@@ -2,6 +2,7 @@ from pathlib import Path
 
 from PIL import Image
 
+from .constants import MAGIC
 from .simcard import SimCard
 
 
@@ -15,12 +16,18 @@ class ScifDecoder:
 
     def read_header(self) -> tuple[int, int]:
         """
-        Reads the SCIF header (Contact 0).
+        Reads and validates the SCIF header.
 
         Returns:
             (width, height)
         """
+
         header = self.sim.get_contact(0)
+
+        if header.name != MAGIC:
+            raise ValueError(
+                f"Invalid SCIF file. Expected '{MAGIC}', got '{header.name}'."
+            )
 
         width = int(header.number[:4])
         height = int(header.number[4:8])
@@ -29,8 +36,9 @@ class ScifDecoder:
 
     def read_hex_data(self) -> str:
         """
-        Reads all hexadecimal image data stored in SIM contacts.
+        Reads all hexadecimal image data stored in the SIM contacts.
         """
+
         return "".join(
             contact.name
             for contact in self.sim.contacts[1:]
@@ -42,6 +50,7 @@ class ScifDecoder:
         Converts hexadecimal characters back into
         4-bit pixel values (0-15).
         """
+
         return [
             int(character, 16)
             for character in hex_string
@@ -50,9 +59,10 @@ class ScifDecoder:
     @staticmethod
     def expand_pixels(pixels: list[int]) -> list[int]:
         """
-        Converts 4-bit pixels (0-15)
+        Converts 4-bit grayscale values (0-15)
         back into 8-bit grayscale (0-255).
         """
+
         return [
             pixel * 17
             for pixel in pixels
@@ -66,13 +76,23 @@ class ScifDecoder:
         output_path: Path,
     ) -> None:
         """
-        Saves the decoded image.
+        Saves the reconstructed image.
         """
+
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
         image = Image.new("L", (width, height))
         image.putdata(pixels)
         image.save(output_path)
 
     def decode_pixels(self) -> list[int]:
+        """
+        Decodes the SCIF file into its original
+        4-bit pixel values (0-15).
+
+        Used for verification.
+        """
+
         width, height = self.read_header()
 
         hex_string = self.read_hex_data()
@@ -83,24 +103,18 @@ class ScifDecoder:
 
     def decode(self, output_path: Path) -> None:
         """
-        Fully decodes the SCIF image.
+        Fully decodes the SCIF image and saves it.
         """
 
         width, height = self.read_header()
 
-        hex_string = self.read_hex_data()
+        pixels = self.decode_pixels()
 
-        # Remove padding from the last contact
-        required_pixels = width * height
-        hex_string = hex_string[:required_pixels]
-
-        pixels = self.hex_to_pixels(hex_string)
-
-        pixels = self.expand_pixels(pixels)
+        expanded_pixels = self.expand_pixels(pixels)
 
         self.save_image(
             width,
             height,
-            pixels,
+            expanded_pixels,
             output_path,
         )

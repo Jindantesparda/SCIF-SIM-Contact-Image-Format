@@ -1,20 +1,12 @@
-from scif.contact import SimContact
-from scif.simcard import SimCard
+from scif.imageutils import ImageUtils
 
-sim = SimCard()
-
-sim.add_contact(
-    SimContact(
-        "SCIFV1",
-        "00000000000000000000"
-    )
+width, height, pixels = ImageUtils.load_scif_pixels(
+    "images/input/test.png"
 )
 
-sim.add_contact(
-    SimContact(
-        "0123456789ABCDEF0123",
-        "12345678901234567890"
-    )
-)
+print(f"Width  : {width}")
+print(f"Height : {height}")
 
-sim.print_contacts()
+print()
+print("First 100 pixels")
+print(pixels[:100])
